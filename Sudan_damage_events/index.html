@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="data/cat8_damage_1.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+        }
+        var map = L.map('map', {
+            zoomControl:true, maxZoom:28, minZoom:1
+        }).fitBounds([[2.08793390185577,9.54581407585854],[23.821220115661315,44.19308195293985]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        document.querySelector(".leaflet-popup-pane").addEventListener("load", function(event) {
+          var tagName = event.target.tagName,
+            popup = map._popup;
+          // Also check if flag is already set.
+          if (tagName === "IMG" && popup && !popup._updated) {
+            popup._updated = true; // Set flag to prevent looping.
+            popup.update();
+          }
+        }, true);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            map.setMaxBounds(map.getBounds());
+        }
+        map.createPane('pane_OpenStreetMap_0');
+        map.getPane('pane_OpenStreetMap_0').style.zIndex = 400;
+        var layer_OpenStreetMap_0 = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            pane: 'pane_OpenStreetMap_0',
+            opacity: 0.638,
+            attribution: '',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 19
+        });
+        layer_OpenStreetMap_0;
+        map.addLayer(layer_OpenStreetMap_0);
+        function pop_cat8_damage_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">country</th>\
+                        <td class="visible-with-data" id="country">' + (feature.properties['country'] !== null ? autolinker.link(feature.properties['country'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' + (feature.properties['id'] !== null ? autolinker.link(feature.properties['id'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">violenceLe</th>\
+                        <td class="visible-with-data" id="violenceLe">' + (feature.properties['violenceLe'] !== null ? autolinker.link(feature.properties['violenceLe'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">url</th>\
+                        <td class="visible-with-data" id="url">' + (feature.properties['url'] !== null ? autolinker.link(feature.properties['url'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">source</th>\
+                        <td class="visible-with-data" id="source">' + (feature.properties['source'] !== null ? autolinker.link(feature.properties['source'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">descriptio</th>\
+                        <td class="visible-with-data" id="descriptio">' + (feature.properties['descriptio'] !== null ? autolinker.link(feature.properties['descriptio'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">category4</th>\
+                        <td class="visible-with-data" id="category4">' + (feature.properties['category4'] !== null ? autolinker.link(feature.properties['category4'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">category8</th>\
+                        <td class="visible-with-data" id="category8">' + (feature.properties['category8'] !== null ? autolinker.link(feature.properties['category8'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">verifiedDa</th>\
+                        <td class="visible-with-data" id="verifiedDa">' + (feature.properties['verifiedDa'] !== null ? autolinker.link(feature.properties['verifiedDa'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">province</th>\
+                        <td class="visible-with-data" id="province">' + (feature.properties['province'] !== null ? autolinker.link(feature.properties['province'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">district</th>\
+                        <td class="visible-with-data" id="district">' + (feature.properties['district'] !== null ? autolinker.link(feature.properties['district'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">civCas</th>\
+                        <td class="visible-with-data" id="civCas">' + (feature.properties['civCas'] !== null ? autolinker.link(feature.properties['civCas'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">isPublishe</th>\
+                        <td class="visible-with-data" id="isPublishe">' + (feature.properties['isPublishe'] !== null ? autolinker.link(feature.properties['isPublishe'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">type</th>\
+                        <td class="visible-with-data" id="type">' + (feature.properties['type'] !== null ? autolinker.link(feature.properties['type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">categories</th>\
+                        <td class="visible-with-data" id="categories">' + (feature.properties['categories'] !== null ? autolinker.link(feature.properties['categories'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">rad</th>\
+                        <td class="visible-with-data" id="rad">' + (feature.properties['rad'] !== null ? autolinker.link(feature.properties['rad'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">category6</th>\
+                        <td class="visible-with-data" id="category6">' + (feature.properties['category6'] !== null ? autolinker.link(feature.properties['category6'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">category7</th>\
+                        <td class="visible-with-data" id="category7">' + (feature.properties['category7'] !== null ? autolinker.link(feature.properties['category7'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">city</th>\
+                        <td class="visible-with-data" id="city">' + (feature.properties['city'] !== null ? autolinker.link(feature.properties['city'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">actor</th>\
+                        <td class="visible-with-data" id="actor">' + (feature.properties['actor'] !== null ? autolinker.link(feature.properties['actor'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">category5</th>\
+                        <td class="visible-with-data" id="category5">' + (feature.properties['category5'] !== null ? autolinker.link(feature.properties['category5'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">fatalities</th>\
+                        <td class="visible-with-data" id="fatalities">' + (feature.properties['fatalities'] !== null ? autolinker.link(feature.properties['fatalities'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">disorderTy</th>\
+                        <td class="visible-with-data" id="disorderTy">' + (feature.properties['disorderTy'] !== null ? autolinker.link(feature.properties['disorderTy'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">eventType</th>\
+                        <td class="visible-with-data" id="eventType">' + (feature.properties['eventType'] !== null ? autolinker.link(feature.properties['eventType'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">subtype</th>\
+                        <td class="visible-with-data" id="subtype">' + (feature.properties['subtype'] !== null ? autolinker.link(feature.properties['subtype'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">credit</th>\
+                        <td class="visible-with-data" id="credit">' + (feature.properties['credit'] !== null ? autolinker.link(feature.properties['credit'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">date</th>\
+                        <td class="visible-with-data" id="date">' + (feature.properties['date'] !== null ? autolinker.link(feature.properties['date'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+            var popup = layer.getPopup();
+            var content = popup.getContent();
+            var updatedContent = removeEmptyRowsFromPopupContent(content, feature);
+            popup.setContent(updatedContent);
+        }
+
+        function style_cat8_damage_1_0(feature) {
+            switch(String(feature.properties['ym'])) {
+                case '2023-04':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(48,18,59,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2023-05':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(66,74,180,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2023-06':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(70,126,245,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2023-07':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(49,175,245,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2023-08':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(24,219,198,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2023-09':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(58,244,144,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2023-10':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(133,255,81,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2023-11':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(190,244,52,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2023-12':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(234,212,57,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2024-01':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(254,169,51,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2024-02':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(247,111,26,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2024-03':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(222,62,8,0.601)',
+                interactive: true,
+            }
+                    break;
+                case '2024-04':
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(179,27,1,0.601)',
+                interactive: true,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_cat8_damage_1',
+                radius: 10.0,
+                stroke: false,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(122,4,3,0.601)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_cat8_damage_1');
+        map.getPane('pane_cat8_damage_1').style.zIndex = 401;
+        map.getPane('pane_cat8_damage_1').style['mix-blend-mode'] = 'normal';
+        var layer_cat8_damage_1 = new L.geoJson(json_cat8_damage_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_cat8_damage_1',
+            layerName: 'layer_cat8_damage_1',
+            pane: 'pane_cat8_damage_1',
+            onEachFeature: pop_cat8_damage_1,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_cat8_damage_1_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_cat8_damage_1);
+        map.addLayer(layer_cat8_damage_1);
+        var baseMaps = {};
+        var overlaysTree = [
+        {label: '<b>event_data</b>', selectAllCheckbox: true, children: [
+            {label: 'cat8_damage<br /><table><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_2023040.png" /></td><td>2023-04</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_2023051.png" /></td><td>2023-05</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_2023062.png" /></td><td>2023-06</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_2023073.png" /></td><td>2023-07</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_2023084.png" /></td><td>2023-08</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_2023095.png" /></td><td>2023-09</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_2023106.png" /></td><td>2023-10</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_2023117.png" /></td><td>2023-11</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_2023128.png" /></td><td>2023-12</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_2024019.png" /></td><td>2024-01</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_20240210.png" /></td><td>2024-02</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_20240311.png" /></td><td>2024-03</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_20240412.png" /></td><td>2024-04</td></tr><tr><td style="text-align: center;"><img src="legend/cat8_damage_1_13.png" /></td><td></td></tr></table>', layer: layer_cat8_damage_1},]},
+            {label: "OpenStreetMap", layer: layer_OpenStreetMap_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: false, 
+        });
+        lay.addTo(map);
+        setBounds();
+        var i = 0;
+        layer_cat8_damage_1.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((exp_label_cat8_damage_1_eval_expression(context) !== null?String('<div style="color: #323232; font-size: 10pt; font-family: \'Open Sans\', sans-serif;">' + exp_label_cat8_damage_1_eval_expression(context)) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_cat8_damage_1'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        map.addControl(new L.Control.Search({
+            layer: layer_cat8_damage_1,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'descriptio'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        resetLabels([layer_cat8_damage_1]);
+        map.on("zoomend", function(){
+            resetLabels([layer_cat8_damage_1]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_cat8_damage_1]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_cat8_damage_1]);
+        });
+        </script>
+    </body>
+</html>
