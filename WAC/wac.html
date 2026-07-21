@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WAC Charts with U-2 Missions</title>
+<link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+<script src="wac_missions_data.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { overflow: hidden; color: #1a1a1a; }
+  #map { position: absolute; inset: 0; }
+  .panel {
+    position: absolute; top: 12px; left: 12px; z-index: 1;
+    background: rgba(255,255,255,0.94); padding: 12px 14px; border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3); max-width: 240px; font-size: 13px;
+  }
+  .panel h1 { margin: 0 0 4px; font-size: 15px; }
+  .panel p { margin: 4px 0 0; color: #555; line-height: 1.35; }
+  .legend { margin-top: 10px; }
+  .legend .bar { height: 10px; border-radius: 3px; background: linear-gradient(to right, #ffeda0, #feb24c, #fc4e2a, #b10026); }
+  .legend .ticks { display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-top: 2px; }
+  .maplibregl-popup-content { font-size: 12px; line-height: 1.4; max-width: 280px; padding: 10px 12px; }
+  .maplibregl-popup-content .title { font-weight: 600; margin-bottom: 4px; }
+  .maplibregl-popup-content .missions { margin-top: 4px; color: #333; word-break: break-word; }
+  .maplibregl-popup-content .muted { color: #888; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="panel">
+  <h1>WAC Charts with U-2 Missions</h1>
+  <p>140 charts over a black-and-white slippy basemap. Label shows <strong>WAC (mission&nbsp;count)</strong>. Hover a chart to list its missions.</p>
+  <div class="legend">
+    <div class="bar"></div>
+    <div class="ticks"><span>1</span><span>missions</span><span>47</span></div>
+  </div>
+</div>
+<script>
+  const DATA_BOUNDS = [[-89, -12], [165, 64]];
+
+  const fillColor = [
+    "interpolate", ["linear"], ["get", "N_MISSIONS"],
+    1,  "#ffeda0",
+    5,  "#feb24c",
+    15, "#fc4e2a",
+    47, "#b10026"
+  ];
+
+  const map = new maplibregl.Map({
+    container: "map",
+    style: {
+      version: 8,
+      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+      sources: {
+        "carto-light": {
+          type: "raster",
+          tiles: [
+            "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+            "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+            "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+            "https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+          ],
+          tileSize: 256,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }
+      },
+      layers: [
+        {
+          id: "background",
+          type: "background",
+          paint: { "background-color": "#f4f4f2" }
+        },
+        {
+          id: "carto-light",
+          type: "raster",
+          source: "carto-light",
+          paint: { "raster-saturation": -1, "raster-contrast": 0.12, "raster-brightness-max": 0.98 }
+        }
+      ]
+    },
+    center: [40, 30],
+    zoom: 1.5,
+    minZoom: 1,
+    maxZoom: 8
+  });
+
+  map.addControl(new maplibregl.NavigationControl(), "top-right");
+  map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
+
+  map.on("load", () => {
+    map.addSource("wac", {
+      type: "geojson",
+      data: window.WAC_MISSIONS_GEOJSON,
+      promoteId: "WAC"
+    });
+
+    map.addLayer({
+      id: "wac-fill",
+      type: "fill",
+      source: "wac",
+      paint: {
+        "fill-color": fillColor,
+        "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.86, 0.58]
+      }
+    });
+
+    map.addLayer({
+      id: "wac-line",
+      type: "line",
+      source: "wac",
+      paint: {
+        "line-color": "#7a0016",
+        "line-opacity": 0.95,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 1, 0.9, 5, 2.2, 8, 4]
+      }
+    });
+
+    map.addLayer({
+      id: "wac-label",
+      type: "symbol",
+      source: "wac",
+      minzoom: 2,
+      layout: {
+        "text-field": [
+          "concat",
+          ["to-string", ["get", "WAC"]], " (",
+          ["to-string", ["get", "N_MISSIONS"]], ")"
+        ],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 2, 10, 5, 13, 8, 16],
+        "text-font": ["Open Sans Regular"],
+        "text-allow-overlap": false,
+        "symbol-placement": "point"
+      },
+      paint: {
+        "text-color": "#111",
+        "text-halo-color": "#fff",
+        "text-halo-width": 1.4
+      }
+    });
+
+    map.fitBounds(DATA_BOUNDS, { padding: 60, duration: 0 });
+
+    const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, maxWidth: "280px" });
+    let hoveredId = null;
+
+    map.on("mousemove", "wac-fill", (event) => {
+      map.getCanvas().style.cursor = "pointer";
+      const feature = event.features[0];
+      if (hoveredId !== null && hoveredId !== feature.id) {
+        map.setFeatureState({ source: "wac", id: hoveredId }, { hover: false });
+      }
+      hoveredId = feature.id;
+      map.setFeatureState({ source: "wac", id: hoveredId }, { hover: true });
+
+      const properties = feature.properties;
+      const title = properties.TITLE && String(properties.TITLE).trim()
+        ? `<div class="title">${properties.TITLE}</div>` : "";
+      const missions = properties.MISSIONS && String(properties.MISSIONS).trim()
+        ? `<div class="missions"><strong>Missions:</strong> ${properties.MISSIONS}</div>`
+        : '<div class="missions muted">No mission list</div>';
+      popup.setLngLat(event.lngLat)
+        .setHTML(
+          `${title}<div>WAC <strong>${properties.WAC}</strong> &middot; ${properties.N_MISSIONS}` +
+          ` mission${properties.N_MISSIONS == 1 ? "" : "s"}</div>${missions}`
+        )
+        .addTo(map);
+    });
+
+    map.on("mouseleave", "wac-fill", () => {
+      map.getCanvas().style.cursor = "";
+      if (hoveredId !== null) {
+        map.setFeatureState({ source: "wac", id: hoveredId }, { hover: false });
+      }
+      hoveredId = null;
+      popup.remove();
+    });
+  });
+</script>
+</body>
+</html>
